@@ -243,6 +243,50 @@ function displayBackgroundImage(type, backgroundPath) {
   }
 }
 
+// Mostrar slider de filmes
+async function displaySlider() {
+  const {results} = await fetchAPIData('movie/now_playing');
+
+  results.forEach((movie) => {
+    const div = document.createElement('div');
+    div.classList.add('swiper-slide');
+
+    div.innerHTML =  `
+    <a href="movie-details.html?id=${movie.id}">
+      <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" 
+      alt="${movie.title}" />
+    </a>
+    <h4 class="swiper-rating">
+      <i class="fas fa-star text-secondary"></i> ${movie.vote_average} / 10
+    </h4> 
+    `
+    ;
+
+    document.querySelector('.swiper-wrapper').appendChild(div);
+
+    initSwiper();
+  });
+}
+
+// Inicializar Swiper
+function initSwiper() {
+  const swiper = new Swiper('.swiper', {
+    slidesPerView: 1,
+    spaceBetween: 30,
+    freeMode: true,
+    loop: true,
+    autoplay: {
+      delay: 4000,
+      disableOnInteraction: false
+    },
+    breakpoints: {
+      500: {slidesPerView: 2},
+      700: {slidesPerView: 3},
+      1200: {slidesPerView: 4}
+    },
+  });
+}
+
 //Fetch data from TMDB API
 async function fetchAPIData(endpoint) {
     //const Token_Leitura_API = eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIyNzkwMWQ0OTEyZGI3ZmJlZmNhNmE3Nzk1OTA5MDFjOSIsInN1YiI6IjY1Y2NjNDFjZTIxMDIzMDE4NWMzZWU2YiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.nJyoE8P8az9IAJpcpfo80bb21YPHJVrN4Ve-8NaiOaQ;
@@ -294,6 +338,7 @@ function init() {
         case '/':
         case '/index.html':
             console.log('Home Page / Popular Movies');
+            displaySlider();
             displayPopularMovies();
             break;
         case '/shows.html':
@@ -305,7 +350,7 @@ function init() {
             displayMovieDetails();
             break;
         case '/tv-details.html':
-            console.log('TV Details');
+            console.log('TV-Show Details');
             displayShowDetails();
             break;
         case '/search.html':
@@ -313,6 +358,7 @@ function init() {
             break;
         default:
             console.log('Situação não definida');
+            alert('Problemas!');
             break;
     }
     highlightActiveLink();
