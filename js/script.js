@@ -1,5 +1,16 @@
 const global = {
-    currentPage: window.location.pathname
+    currentPage: window.location.pathname,
+    search: {
+      term: '',
+      type: '',
+      page: 1,
+      totalPages: 1,
+      totalResults: 0
+    },
+    api: {
+      apiKey: '27901d4912db7fbefca6a779590901c9',
+      apiUrl: 'https://api.themoviedb.org/3/'
+    }
 };
 
 //Mostrar filmes mais populares
@@ -243,6 +254,189 @@ function displayBackgroundImage(type, backgroundPath) {
   }
 }
 
+async function search(){
+  const queryString = window.location.search;
+  const urlParams = new URLSearchParams(queryString);
+
+  global.search.type = urlParams.get('type');
+  global.search.term = urlParams.get('search-term');
+
+  if (global.search.term !== '' && global.search.term !== null) {
+    //Fazer requisição e mostrar resultados
+    const {results, total_pages, page, total_results} = await searchAPIData();
+    
+    global.search.page = page;
+    global.search.totalPages = total_pages;
+    global.search.totalResults = total_results;
+
+    if (results.length === 0) {
+      showAlert('Nenhum resultado encontrado.', 'error');
+      return;
+    }
+
+    displaySearchResults(results);
+
+    document.querySelector('#search-term').value = '';
+
+  } else {
+    //alert('Por favor, insira um termo de pesquisa!');
+    showAlert('Por favor, insira um termo de pesquisa!', 'error');
+  }
+}
+
+// Mostrar Resultados de pesquisa
+function displaySearchResults(results){
+  
+  //Limpar HUD
+  document.querySelector('#search-results').innerHTML = '';
+  document.querySelector('#search-results-heading').innerHTML = '';
+  document.querySelector('#pagination').innerHTML = '';
+
+  const pagAtual = global.search.page;
+  const totalPaginas = global.search.totalPages;
+  const totalFilmes = global.search.totalResults;
+  const filmesNaPag = results.length;
+
+  //Fim dos resultados
+  let fimResults =  20 * global.search.page;
+  if (fimResults > totalFilmes) {
+    console.log('é maior');
+    fimResults = totalFilmes;
+  } else {
+  
+  }
+
+  //Início dos resultados
+  const iniResults = fimResults - filmesNaPag + 1;
+
+  // console.log("\n\n");
+  // console.log("fimResults: " + fimResults);
+  // console.log("iniResults: " + iniResults);
+  // console.log("totalFilmes: " + totalFilmes);
+
+  results.forEach((result) => {
+    const div = document.createElement('div');
+    div.classList.add('card');
+    div.innerHTML = `
+      <a href="${global.search.type}-details.html?id=${result.id}">
+        ${result.poster_path
+            ? 
+            `<img
+            src="https://image.tmdb.org/t/p/w500${result.poster_path}"
+            class="card-img-top"
+            alt="${global.search.type === 'movie' ?
+              result.title : result.name}"
+            />`
+            :
+            `<img
+            src="../images/no-image.jpg"
+            class="card-img-top"
+            alt="${global.search.type === 'movie' ?
+            result.title : result.name}"
+            />`
+        }
+      </a>
+      <div class="card-body">
+        <h5 class="card-title">${global.search.type === 'movie' ?
+        result.title : result.name}</h5>
+        <p class="card-text">
+          <small class="text-muted">Release: ${global.search.type === 'movie' ? 
+            result.release_date : result.first_air_date}</small>
+        </p>
+      </div>
+    `;
+
+    document.querySelector('#search-results-heading').innerHTML = `
+        <h2>Mostrando resultados para "${global.search.term}"</h2>
+        <h2>(Mostrando ${iniResults} a ${fimResults} de ${global.search.totalResults})</h2>
+    `;
+
+    document.querySelector('#search-results').appendChild(div);
+  });
+  
+  displayPagination();
+}
+
+// Criar e mostrar paginação para pesquisa
+function displayPagination(){
+  const div = document.createElement('div');
+  div.classList.add('pagination');
+
+  div.innerHTML = `
+    <button class="btn btn-primary" id="prev">Anterior</button>
+    <button class="btn btn-primary" id="next">Próxima</button>
+    <div class="page-counter">
+      Página ${global.search.page} de ${global.search.totalPages}</div>   
+  `;
+
+  document.querySelector('#pagination').appendChild(div);
+
+  // Desabilitar botão 'Anterior' na página 1
+  if (global.search.page === 1) {
+    const elementToRemove = document.getElementById('prev');
+
+    if (elementToRemove) {
+      const parent = elementToRemove.parentNode;
+      parent.removeChild(elementToRemove);
+    }
+  }
+
+  // // Desabilitar botão 'Anterior' : forma alternativa
+  // if (global.search.page === 1 && document.getElementById('prev')) {
+  //   document.getElementById('prev').parentNode.
+  //     removeChild(document.getElementById('prev'));
+  // }
+
+  // Desabilitar botão 'Próxima' na última página
+  if (global.search.page === global.search.totalPages) {
+    const elementToRemove = document.getElementById('next');
+
+    if (elementToRemove) {
+      const parent = elementToRemove.parentNode;
+      parent.removeChild(elementToRemove);
+    }
+  }
+
+  // // Próxima página
+  // document.querySelector('#next').addEventListener('click', async() => 
+  // {
+  //   global.search.page++;
+  //   const {results, total_pages} = await searchAPIData();
+  //   displaySearchResults(results);
+  // });
+  if (document.querySelector('#next')) {
+    document.querySelector('#next').addEventListener('click',btnProxPag);
+  }
+
+  // Página anterior
+  if (document.querySelector('#prev')) {
+    document.querySelector('#prev').addEventListener('click',btnAntPag);
+  }
+
+}
+
+// Botão página anterior
+async function btnAntPag() {
+  if (global.search.page > 1) {
+    global.search.page--;
+    const {results, total_pages} = await searchAPIData();
+    displaySearchResults(results);
+  } else {
+    showAlert('Não há página anterior!','error');
+  }
+}
+
+// Botão próxima página
+async function btnProxPag() {
+  if (global.search.page < global.search.totalPages) {
+    global.search.page++;
+    const {results, total_pages} = await searchAPIData();
+    displaySearchResults(results);
+  } else {
+    showAlert('Não há próxima página!', 'error');
+  }
+}
+
 // Mostrar slider de filmes
 async function displaySlider() {
   const {results} = await fetchAPIData('movie/now_playing');
@@ -287,12 +481,12 @@ function initSwiper() {
   });
 }
 
-//Fetch data from TMDB API
+// Buscar dados de TMDB API
 async function fetchAPIData(endpoint) {
     //const Token_Leitura_API = eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIyNzkwMWQ0OTEyZGI3ZmJlZmNhNmE3Nzk1OTA5MDFjOSIsInN1YiI6IjY1Y2NjNDFjZTIxMDIzMDE4NWMzZWU2YiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.nJyoE8P8az9IAJpcpfo80bb21YPHJVrN4Ve-8NaiOaQ;
     //const API_KEY = '3fd2be6f0c70a2a598f084ddfb75487c' // Brad Traversy;
-    const API_KEY = '27901d4912db7fbefca6a779590901c9';
-    const API_URL = 'https://api.themoviedb.org/3/';
+    const API_KEY = global.api.apiKey;
+    const API_URL = global.api.apiUrl;
 
     showSpinner();
 
@@ -307,6 +501,30 @@ async function fetchAPIData(endpoint) {
     hideSpinner();
 
     return data;
+}
+
+// Fazer request para Search API Data - mecanismo de pesquisa
+async function searchAPIData() {
+  const API_KEY = global.api.apiKey;
+  const API_URL = global.api.apiUrl;
+
+  showSpinner();
+
+  const response = await fetch(API_URL +
+      'search/' +
+      global.search.type +
+      '?api_key=' +
+      API_KEY +
+      '&language=en-US&query=' +
+      global.search.term +
+      '&page=' +
+      global.search.page);
+  
+  const data = await response.json();
+
+  hideSpinner();
+
+  return data;
 }
 
 function showSpinner() {
@@ -329,6 +547,16 @@ function highlightActiveLink() {
 
 function addCommasToNumber(number) {
     return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// Show Alert
+function showAlert(message, className) {
+  const alertEl = document.createElement('div');
+  alertEl.classList.add('alert', className);
+  alertEl.appendChild(document.createTextNode(message));
+  document.querySelector('#alert').appendChild(alertEl);
+
+  setTimeout(() => alertEl.remove(), 3000);
 }
 
 //Init App
@@ -355,6 +583,7 @@ function init() {
             break;
         case '/search.html':
             console.log('Search');
+            search();
             break;
         default:
             console.log('Situação não definida');
