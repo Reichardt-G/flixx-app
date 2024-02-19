@@ -300,11 +300,8 @@ function displaySearchResults(results){
   //Fim dos resultados
   let fimResults =  20 * global.search.page;
   if (fimResults > totalFilmes) {
-    console.log('é maior');
     fimResults = totalFilmes;
-  } else {
-  
-  }
+  } 
 
   //Início dos resultados
   const iniResults = fimResults - filmesNaPag + 1;
@@ -313,6 +310,8 @@ function displaySearchResults(results){
   // console.log("fimResults: " + fimResults);
   // console.log("iniResults: " + iniResults);
   // console.log("totalFilmes: " + totalFilmes);
+
+  showSpinner();
 
   results.forEach((result) => {
     const div = document.createElement('div');
@@ -413,10 +412,15 @@ function displayPagination(){
     document.querySelector('#prev').addEventListener('click',btnAntPag);
   }
 
+  hideSpinner();
+
 }
 
 // Botão página anterior
 async function btnAntPag() {
+
+  showSpinner();
+
   if (global.search.page > 1) {
     global.search.page--;
     const {results, total_pages} = await searchAPIData();
@@ -424,10 +428,15 @@ async function btnAntPag() {
   } else {
     showAlert('Não há página anterior!','error');
   }
+
+  hideSpinner;
 }
 
 // Botão próxima página
 async function btnProxPag() {
+
+  showSpinner();
+
   if (global.search.page < global.search.totalPages) {
     global.search.page++;
     const {results, total_pages} = await searchAPIData();
@@ -435,6 +444,9 @@ async function btnProxPag() {
   } else {
     showAlert('Não há próxima página!', 'error');
   }
+
+  hideSpinner();
+
 }
 
 // Mostrar slider de filmes
